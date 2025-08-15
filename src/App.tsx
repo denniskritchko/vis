@@ -201,6 +201,7 @@ export function App(): React.ReactElement {
 		// target rotations derived from mouse
 		let targetRotX = 0
 		let targetRotY = 0
+		let inputFocused = false
 
 		function render() {
 			if (objectMesh) {
@@ -262,7 +263,7 @@ export function App(): React.ReactElement {
 		const onMouseMove = (e: MouseEvent) => {
 			const el = cursorRef.current
 			if (!el) return
-			el.style.opacity = '1'
+			el.style.opacity = inputFocused ? '0' : '1'
 			el.style.left = `${e.clientX}px`
 			el.style.top = `${e.clientY}px`
 			el.style.transform = 'translate(-50%, -50%)'
@@ -277,7 +278,7 @@ export function App(): React.ReactElement {
 			targetRotY = ndcX * maxTiltY
 			// adjust input glow intensity based on distance to cursor
 			const inputEl = inputContainerRef.current?.querySelector('input') as HTMLInputElement | null
-			if (inputEl && inputContainerRef.current) {
+			if (!inputFocused && inputEl && inputContainerRef.current) {
 				const rect = inputEl.getBoundingClientRect()
 				const cx = rect.left + rect.width / 2
 				const cy = rect.top + rect.height / 2
@@ -300,10 +301,36 @@ export function App(): React.ReactElement {
 		window.addEventListener('mousemove', onMouseMove)
 		window.addEventListener('mouseleave', onMouseLeave)
 
+		// input focus/blur to toggle cursor glow and intensify text box glow
+		const inputElForEvents = inputContainerRef.current?.querySelector('input') as HTMLInputElement | null
+		const onInputFocus = () => {
+			inputFocused = true
+			if (cursorRef.current) cursorRef.current.style.opacity = '0'
+			if (inputElForEvents) {
+				inputElForEvents.style.setProperty('--glow-a1', '0.7')
+				inputElForEvents.style.setProperty('--glow-a2', '0.65')
+			}
+		}
+		const onInputBlur = () => {
+			inputFocused = false
+			if (inputElForEvents) {
+				inputElForEvents.style.removeProperty('--glow-a1')
+				inputElForEvents.style.removeProperty('--glow-a2')
+			}
+		}
+		if (inputElForEvents) {
+			inputElForEvents.addEventListener('focus', onInputFocus)
+			inputElForEvents.addEventListener('blur', onInputBlur)
+		}
+
 		return () => {
 			window.removeEventListener('resize', resize)
 			window.removeEventListener('mousemove', onMouseMove)
 			window.removeEventListener('mouseleave', onMouseLeave)
+			if (inputElForEvents) {
+				inputElForEvents.removeEventListener('focus', onInputFocus)
+				inputElForEvents.removeEventListener('blur', onInputBlur)
+			}
 			cancelAnimationFrame(raf)
 			controls.dispose()
 			renderer.dispose()
