@@ -21,6 +21,7 @@ const config = {
 
 export function App(): React.ReactElement {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
+	const inputContainerRef = useRef<HTMLDivElement | null>(null)
 
 	useEffect(() => {
 		if (!canvasRef.current) return
@@ -89,6 +90,8 @@ export function App(): React.ReactElement {
 				textGeometry.center()
 				objectMesh = new THREE.Mesh(textGeometry, objectMaterial)
 				scene.add(objectMesh)
+				// show input overlay once object is ready
+				if (inputContainerRef.current) inputContainerRef.current.style.display = 'block'
 			}
 		)
 
@@ -120,6 +123,21 @@ export function App(): React.ReactElement {
 				objectMesh.rotation.z = clock.getElapsedTime() * config.object.speed
 				objectMesh.rotation.x = clock.getElapsedTime() * config.object.speed
 				objectMesh.position.y = Math.sin(clock.getElapsedTime() * config.object.speed) * 0.2
+				// position input centered under the 3D text in screen space using its bottom bound
+				if (inputContainerRef.current) {
+					const geom = objectMesh.geometry as THREE.BufferGeometry
+					if (!geom.boundingBox) geom.computeBoundingBox()
+					const bbox = geom.boundingBox!
+					const bottomWorld = new THREE.Vector3(0, bbox.min.y, 0).applyMatrix4(objectMesh.matrixWorld)
+					const screenPos = bottomWorld.clone().project(camera)
+					const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth
+					const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight
+					const offsetPx = 16
+					const el = inputContainerRef.current
+					el.style.left = `${x}px`
+					el.style.top = `${y + offsetPx}px`
+					el.style.transform = 'translate(-50%, 0)'
+				}
 			}
 			camera.lookAt(scene.position)
 			camera.updateMatrixWorld()
@@ -151,6 +169,9 @@ export function App(): React.ReactElement {
 	return (
 		<>
 			<canvas ref={canvasRef} className="three-canvas" />
+			<div ref={inputContainerRef} className="overlay-input">
+				<input className="text-input" placeholder={"Let's get creative"} />
+			</div>
 			<div className="footer">
 				<a href="" target="_blank" rel="noreferrer">
 				</a>

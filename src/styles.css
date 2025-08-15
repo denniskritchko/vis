@@ -2,6 +2,38 @@ body {
 	margin: 0;
 }
 
+.overlay-input {
+	position: fixed;
+	z-index: 10;
+	display: none;
+}
+
+.text-input {
+	padding: 0.8rem 1rem;
+	min-width: 280px;
+	width: min(80vw, 480px);
+	font-size: 1.05rem;
+	color: #ffffff;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	border-radius: 8px;
+	outline: none;
+	backdrop-filter: blur(6px);
+	box-shadow: 0 0 18px rgba(255, 255, 255, 0.35), 0 0 42px rgba(0, 200, 255, 0.25);
+	text-shadow: 0 0 14px rgba(255, 255, 255, 0.6);
+	font-family: Helvetica, Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+	text-align: center;
+}
+
+.text-input::placeholder {
+	color: rgba(255, 255, 255, 0.8);
+}
+
+.text-input:focus {
+	border-color: #ffffff;
+	box-shadow: 0 0 24px rgba(255, 255, 255, 0.5), 0 0 64px rgba(0, 200, 255, 0.35);
+}
+
 .three-canvas {
 	z-index: -1;
 	top: 0;
