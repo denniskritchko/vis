@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
-import { Pane } from 'tweakpane'
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
+ 
 
 const texture = {
 	matcap:
@@ -18,9 +19,8 @@ const config = {
 	object: { speed: 0 },
 }
 
-export function App(): JSX.Element {
+export function App(): React.ReactElement {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
-	const paneRef = useRef<Pane | null>(null)
 
 	useEffect(() => {
 		if (!canvasRef.current) return
@@ -33,7 +33,7 @@ export function App(): JSX.Element {
 		const clock = new THREE.Clock()
 		const scene = new THREE.Scene()
 		const camera = new THREE.PerspectiveCamera(35)
-		camera.position.set(0, -1.7, 5)
+		camera.position.set(0, -1.7, 10)
 		scene.background = new THREE.Color(0x000a0b)
 
 		const controls = new OrbitControls(camera, canvasRef.current)
@@ -51,17 +51,46 @@ export function App(): JSX.Element {
 		// @ts-expect-error - keep parity with original code spelling
 		renderer.shadowMap.type = THREE.PCFShoftSHadowMap
 
-		// object
-		const oGeo = new RoundedBoxGeometry(1, 1, 1, 5, 0.05)
+		// lights: move primary light above the object and add subtle ambient
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.2)
+		scene.add(ambientLight)
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2)
+		directionalLight.position.set(0, 5, 2)
+		directionalLight.target.position.set(0, 0, 0)
+		scene.add(directionalLight)
+		scene.add(directionalLight.target)
+
+		// object -> 3D text "Vis" using same material
 		const textureLoader = new THREE.TextureLoader()
-		const oMat = new THREE.MeshMatcapMaterial({
+		const objectMaterial = new THREE.MeshMatcapMaterial({
 			color: 0xffffff,
 			matcap: textureLoader.load(texture.matcap),
 			map: textureLoader.load(texture.env),
 		})
+		// keep matcap as-is (no shader rotation)
+		let objectMesh: THREE.Mesh | null = null
 
-		const oMesh = new THREE.Mesh(oGeo, oMat)
-		scene.add(oMesh)
+		const fontLoader = new FontLoader()
+		fontLoader.load(
+			'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json',
+			(font) => {
+				const textOptions: any = {
+					font,
+					size: 1,
+					height: 0.25,
+					curveSegments: 12,
+					bevelEnabled: true,
+					bevelThickness: 0.03,
+					bevelSize: 0.02,
+					bevelOffset: 0,
+					bevelSegments: 5,
+				}
+				const textGeometry = new TextGeometry('Vis', textOptions)
+				textGeometry.center()
+				objectMesh = new THREE.Mesh(textGeometry, objectMaterial)
+				scene.add(objectMesh)
+			}
+		)
 
 		// capsules
 		const capsules: THREE.Mesh[] = []
@@ -77,13 +106,7 @@ export function App(): JSX.Element {
 			capsules.push(cap)
 		}
 
-		// panel
-		const pane = new Pane({ title: 'Panel' })
-		paneRef.current = pane
-		const sn = pane.addFolder({ title: 'Scene' })
-		sn.addBinding(config.scene, 'speed', { min: 0, max: 1, label: 'Speed' })
-		const ob = pane.addFolder({ title: 'Object' })
-		ob.addBinding(config.object, 'speed', { min: 0, max: 1, label: 'Speed' })
+		// panel removed
 
 		function resize() {
 			camera.aspect = window.innerWidth / window.innerHeight
@@ -92,11 +115,12 @@ export function App(): JSX.Element {
 		}
 
 		function render() {
-			scene.rotation.y = clock.getElapsedTime() * config.scene.speed
-			oMesh.rotation.y = -clock.getElapsedTime() * config.object.speed
-			oMesh.rotation.z = clock.getElapsedTime() * config.object.speed
-			oMesh.rotation.x = clock.getElapsedTime() * config.object.speed
-			oMesh.position.y = Math.sin(clock.getElapsedTime() * config.object.speed) * 0.2
+			if (objectMesh) {
+				objectMesh.rotation.y = -clock.getElapsedTime() * config.object.speed
+				objectMesh.rotation.z = clock.getElapsedTime() * config.object.speed
+				objectMesh.rotation.x = clock.getElapsedTime() * config.object.speed
+				objectMesh.position.y = Math.sin(clock.getElapsedTime() * config.object.speed) * 0.2
+			}
 			camera.lookAt(scene.position)
 			camera.updateMatrixWorld()
 			renderer.render(scene, camera)
@@ -116,11 +140,10 @@ export function App(): JSX.Element {
 		return () => {
 			window.removeEventListener('resize', resize)
 			cancelAnimationFrame(raf)
-			pane.dispose()
 			controls.dispose()
 			renderer.dispose()
-			oGeo.dispose()
-			oMat.dispose()
+			if (objectMesh) objectMesh.geometry.dispose()
+			objectMaterial.dispose()
 			capsules.forEach((m) => m.geometry.dispose())
 		}
 	}, [])
@@ -129,8 +152,7 @@ export function App(): JSX.Element {
 		<>
 			<canvas ref={canvasRef} className="three-canvas" />
 			<div className="footer">
-				<a href="https://www.instagram.com/victorvergara.co/" target="_blank" rel="noreferrer">
-					<img src="https://victorvergara.co/logo.svg" />
+				<a href="" target="_blank" rel="noreferrer">
 				</a>
 			</div>
 		</>

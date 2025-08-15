@@ -15,8 +15,9 @@
     "tweakpane": "4.0.3"
   },
   "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@types/three": "^0.179.0",
     "@vitejs/plugin-react": "4.3.1",
     "vite": "5.4.1"
   }
 }
-
