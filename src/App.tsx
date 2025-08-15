@@ -68,7 +68,82 @@ export function App(): React.ReactElement {
 			matcap: textureLoader.load(texture.matcap),
 			map: textureLoader.load(texture.env),
 		})
-		// keep matcap as-is (no shader rotation)
+		// inject glow that reacts to the DOM input position (screen-space)
+		let matcapGlowShader: any = null
+		objectMaterial.onBeforeCompile = (shader: any) => {
+			shader.uniforms.uGlowCenter = { value: new THREE.Vector2(0, 0) }
+			shader.uniforms.uGlowRadius = { value: 0.2 }
+			shader.uniforms.uGlowIntensity = { value: 0.9 }
+			shader.uniforms.uGlowColor = { value: new THREE.Color(0x66e0ff) }
+
+			shader.vertexShader = `
+				varying vec2 vNdc;
+				${shader.vertexShader}
+			`.replace(
+				'#include <project_vertex>',
+				`#include <project_vertex>
+				vNdc = gl_Position.xy / gl_Position.w;
+				`
+			)
+
+			shader.fragmentShader = `
+				uniform vec2 uGlowCenter;
+				uniform float uGlowRadius;
+				uniform float uGlowIntensity;
+				uniform vec3 uGlowColor;
+				varying vec2 vNdc;
+				${shader.fragmentShader}
+			`.replace(
+				'#include <matcap_fragment>',
+				`
+				#ifdef USE_MATCAP
+					vec3 viewDir = normalize( vViewPosition );
+					vec3 x = normalize( vec3( viewDir.z, 0.0, - viewDir.x ) );
+					vec3 y = cross( viewDir, x );
+					vec2 uv = vec2( dot( x, normal ), dot( y, normal ) ) * 0.5 + 0.5;
+					vec4 matcapColor = texture2D( matcap, uv );
+					matcapColor = matcapTexelToLinear( matcapColor );
+					#ifdef MATCAP_BLENDING_MULTIPLY
+						outgoingLight = mix( outgoingLight, outgoingLight * matcapColor.rgb, matcapIntensity );
+					#else
+						outgoingLight = mix( outgoingLight, matcapColor.rgb, matcapIntensity );
+					#endif
+				#endif
+				// screen-space glow add
+				float glow = smoothstep( uGlowRadius, 0.0, distance( vNdc, uGlowCenter ) ) * uGlowIntensity;
+				outgoingLight += uGlowColor * glow;
+				`
+			)
+
+			matcapGlowShader = shader
+		}
+
+		// helpers to sample DOM input styles and convert to THREE.Color
+		function extractColorFromShadow(shadow: string): string | null {
+			if (!shadow) return null
+			const regex = /rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?\s*\)/g
+			let match: RegExpExecArray | null
+			let best: { r: number; g: number; b: number; a: number } | null = null
+			while ((match = regex.exec(shadow))) {
+				const r = parseFloat(match[1])
+				const g = parseFloat(match[2])
+				const b = parseFloat(match[3])
+				const a = match[4] !== undefined ? parseFloat(match[4]) : 1
+				if (!best || a > best.a) best = { r, g, b, a }
+			}
+			if (best) return `rgb(${best.r}, ${best.g}, ${best.b})`
+			return null
+		}
+
+		function cssColorToRgb(color: string): [number, number, number] {
+			const ctx = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D
+			ctx.fillStyle = '#000'
+			ctx.fillStyle = color
+			const computed = ctx.fillStyle as string
+			const m = computed.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+			if (m) return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)]
+			return [102, 224, 255] // fallback to #66e0ff
+		}
 		let objectMesh: THREE.Mesh | null = null
 
 		const fontLoader = new FontLoader()
@@ -137,7 +212,27 @@ export function App(): React.ReactElement {
 					el.style.left = `${x}px`
 					el.style.top = `${y + offsetPx}px`
 					el.style.transform = 'translate(-50%, 0)'
+					// update shader glow center from DOM input center
+					if (matcapGlowShader) {
+						const rect = el.getBoundingClientRect()
+						const cx = rect.left + rect.width / 2
+						const cy = rect.top + rect.height / 2
+						const ndcX = (cx / window.innerWidth) * 2 - 1
+						const ndcY = 1 - (cy / window.innerHeight) * 2
+						matcapGlowShader.uniforms.uGlowCenter.value.set(ndcX, ndcY)
+						// sample input color to drive glow
+						const styles = window.getComputedStyle(el.querySelector('input') as HTMLInputElement)
+						const shadowColor = extractColorFromShadow(styles.boxShadow)
+						const baseColor = shadowColor || styles.color || '#66e0ff'
+						const [r, g, b] = cssColorToRgb(baseColor)
+						matcapGlowShader.uniforms.uGlowColor.value.setRGB(r / 255, g / 255, b / 255)
+					}
 				}
+			}
+			// animate soft pulsing of glow radius with scene speed
+			if (matcapGlowShader) {
+				const t = clock.getElapsedTime()
+				matcapGlowShader.uniforms.uGlowRadius.value = 0.18 + 0.04 * (0.5 + 0.5 * Math.sin(t * (0.5 + 2.0 * config.scene.speed)))
 			}
 			camera.lookAt(scene.position)
 			camera.updateMatrixWorld()
