@@ -255,7 +255,23 @@ export function App(): React.ReactElement {
 			el.style.top = `${e.clientY}px`
 			el.style.transform = 'translate(-50%, -50%)'
 			// set white glow for cursor highlight
-			el.style.setProperty('--cursor-glow', 'rgba(255, 255, 255, 0.6)')
+			el.style.setProperty('--cursor-glow', 'rgba(255, 255, 255, 0.7)')
+			// adjust input glow intensity based on distance to cursor
+			const inputEl = inputContainerRef.current?.querySelector('input') as HTMLInputElement | null
+			if (inputEl && inputContainerRef.current) {
+				const rect = inputEl.getBoundingClientRect()
+				const cx = rect.left + rect.width / 2
+				const cy = rect.top + rect.height / 2
+				const dx = e.clientX - cx
+				const dy = e.clientY - cy
+				const dist = Math.sqrt(dx * dx + dy * dy)
+				const maxDist = Math.hypot(window.innerWidth, window.innerHeight) * 0.25
+				const t = Math.max(0, 1 - dist / maxDist)
+				const a1 = 0.15 + 0.5 * t
+				const a2 = 0.10 + 0.45 * t
+				inputEl.style.setProperty('--glow-a1', String(a1))
+				inputEl.style.setProperty('--glow-a2', String(a2))
+			}
 		}
 		const onMouseLeave = () => {
 			const el = cursorRef.current
