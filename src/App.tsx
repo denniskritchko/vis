@@ -22,6 +22,7 @@ const config = {
 export function App(): React.ReactElement {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const inputContainerRef = useRef<HTMLDivElement | null>(null)
+	const cursorRef = useRef<HTMLDivElement | null>(null)
 
 	useEffect(() => {
 		if (!canvasRef.current) return
@@ -220,12 +221,8 @@ export function App(): React.ReactElement {
 						const ndcX = (cx / window.innerWidth) * 2 - 1
 						const ndcY = 1 - (cy / window.innerHeight) * 2
 						matcapGlowShader.uniforms.uGlowCenter.value.set(ndcX, ndcY)
-						// sample input color to drive glow
-						const styles = window.getComputedStyle(el.querySelector('input') as HTMLInputElement)
-						const shadowColor = extractColorFromShadow(styles.boxShadow)
-						const baseColor = shadowColor || styles.color || '#66e0ff'
-						const [r, g, b] = cssColorToRgb(baseColor)
-						matcapGlowShader.uniforms.uGlowColor.value.setRGB(r / 255, g / 255, b / 255)
+						// force white glow for mesh matcap
+						matcapGlowShader.uniforms.uGlowColor.value.setRGB(1, 1, 1)
 					}
 				}
 			}
@@ -249,9 +246,29 @@ export function App(): React.ReactElement {
 		loop()
 
 		window.addEventListener('resize', resize)
+		// cursor highlight handlers
+		const onMouseMove = (e: MouseEvent) => {
+			const el = cursorRef.current
+			if (!el) return
+			el.style.opacity = '1'
+			el.style.left = `${e.clientX}px`
+			el.style.top = `${e.clientY}px`
+			el.style.transform = 'translate(-50%, -50%)'
+			// set white glow for cursor highlight
+			el.style.setProperty('--cursor-glow', 'rgba(255, 255, 255, 0.6)')
+		}
+		const onMouseLeave = () => {
+			const el = cursorRef.current
+			if (!el) return
+			el.style.opacity = '0'
+		}
+		window.addEventListener('mousemove', onMouseMove)
+		window.addEventListener('mouseleave', onMouseLeave)
 
 		return () => {
 			window.removeEventListener('resize', resize)
+			window.removeEventListener('mousemove', onMouseMove)
+			window.removeEventListener('mouseleave', onMouseLeave)
 			cancelAnimationFrame(raf)
 			controls.dispose()
 			renderer.dispose()
@@ -267,6 +284,7 @@ export function App(): React.ReactElement {
 			<div ref={inputContainerRef} className="overlay-input">
 				<input className="text-input" placeholder={"Let's get creative"} />
 			</div>
+			<div ref={cursorRef} className="cursor-highlight" />
 			<div className="footer">
 				<a href="" target="_blank" rel="noreferrer">
 				</a>
