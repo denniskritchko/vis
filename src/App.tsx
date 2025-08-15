@@ -44,6 +44,7 @@ export function App(): React.ReactElement {
 		controls.enableZoom = false
 		controls.enableDamping = true
 		controls.dampingFactor = 0.02
+		controls.enabled = false
 
 		const axesHelper = new THREE.AxesHelper(2)
 		axesHelper.position.y = -1.5
@@ -61,6 +62,10 @@ export function App(): React.ReactElement {
 		directionalLight.target.position.set(0, 0, 0)
 		scene.add(directionalLight)
 		scene.add(directionalLight.target)
+
+		// root group that will follow the mouse (parallax/tilt)
+		const root = new THREE.Group()
+		scene.add(root)
 
 		// object -> 3D text "Vis" using same material
 		const textureLoader = new THREE.TextureLoader()
@@ -165,7 +170,7 @@ export function App(): React.ReactElement {
 				const textGeometry = new TextGeometry('Vis', textOptions)
 				textGeometry.center()
 				objectMesh = new THREE.Mesh(textGeometry, objectMaterial)
-				scene.add(objectMesh)
+				root.add(objectMesh)
 				// show input overlay once object is ready
 				if (inputContainerRef.current) inputContainerRef.current.style.display = 'block'
 			}
@@ -181,7 +186,7 @@ export function App(): React.ReactElement {
 			cap.position.y = -Math.random() * (amp / 2) + Math.random() * (amp / 2)
 			cap.position.x = -Math.sin(i * 0.3) * Math.PI
 			cap.position.z = -Math.cos(i * 0.3) * Math.PI
-			scene.add(cap)
+			root.add(cap)
 			capsules.push(cap)
 		}
 
@@ -192,6 +197,10 @@ export function App(): React.ReactElement {
 			camera.updateProjectionMatrix()
 			renderer.setSize(window.innerWidth, window.innerHeight)
 		}
+
+		// target rotations derived from mouse
+		let targetRotX = 0
+		let targetRotY = 0
 
 		function render() {
 			if (objectMesh) {
@@ -226,6 +235,9 @@ export function App(): React.ReactElement {
 					}
 				}
 			}
+			// ease root rotation toward target (follow cursor)
+			root.rotation.x += (targetRotX - root.rotation.x) * 0.08
+			root.rotation.y += (targetRotY - root.rotation.y) * 0.08
 			// animate soft pulsing of glow radius with scene speed
 			if (matcapGlowShader) {
 				const t = clock.getElapsedTime()
@@ -234,7 +246,7 @@ export function App(): React.ReactElement {
 			camera.lookAt(scene.position)
 			camera.updateMatrixWorld()
 			renderer.render(scene, camera)
-			controls.update()
+			// controls disabled; no update needed
 		}
 
 		let raf = 0
@@ -256,6 +268,13 @@ export function App(): React.ReactElement {
 			el.style.transform = 'translate(-50%, -50%)'
 			// set white glow for cursor highlight
 			el.style.setProperty('--cursor-glow', 'rgba(255, 255, 255, 0.7)')
+			// update target rotation from pointer position (NDC)
+			const ndcX = (e.clientX / window.innerWidth) * 2 - 1
+			const ndcY = 1 - (e.clientY / window.innerHeight) * 2
+			const maxTiltX = 0.2 // radians
+			const maxTiltY = 0.35 // radians
+			targetRotX = -ndcY * maxTiltX
+			targetRotY = ndcX * maxTiltY
 			// adjust input glow intensity based on distance to cursor
 			const inputEl = inputContainerRef.current?.querySelector('input') as HTMLInputElement | null
 			if (inputEl && inputContainerRef.current) {
