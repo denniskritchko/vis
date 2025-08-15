@@ -35,7 +35,7 @@ export function App(): React.ReactElement {
 		const clock = new THREE.Clock()
 		const scene = new THREE.Scene()
 		const camera = new THREE.PerspectiveCamera(35)
-		camera.position.set(0, -1.7, 10)
+		camera.position.set(0, 0.6, 12)
 		scene.background = new THREE.Color(0x000a0b)
 
 		const controls = new OrbitControls(camera, canvasRef.current)
