@@ -307,6 +307,8 @@ export function App(): React.ReactElement {
 			inputFocused = true
 			if (cursorRef.current) cursorRef.current.style.opacity = '0'
 			if (inputElForEvents) {
+				// hide hint text while focused
+				inputElForEvents.placeholder = ''
 				inputElForEvents.style.setProperty('--glow-a1', '0.7')
 				inputElForEvents.style.setProperty('--glow-a2', '0.65')
 			}
@@ -314,6 +316,10 @@ export function App(): React.ReactElement {
 		const onInputBlur = () => {
 			inputFocused = false
 			if (inputElForEvents) {
+				// restore hint text if empty
+				if (inputElForEvents.value.trim() === '') {
+					inputElForEvents.placeholder = "Let's get creative"
+				}
 				inputElForEvents.style.removeProperty('--glow-a1')
 				inputElForEvents.style.removeProperty('--glow-a2')
 			}
