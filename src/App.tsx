@@ -346,6 +346,11 @@ export function App(): React.ReactElement {
 			<div ref={inputContainerRef} className="overlay-input">
 				<input className="text-input" placeholder={"Let's get creative"} />
 			</div>
+			<div className="top-right-actions">
+				<button className="action-btn">Learn more</button>
+				<button className="action-btn">Contact</button>
+				<button className="action-btn">Sign in</button>
+			</div>
 			<div ref={cursorRef} className="cursor-highlight" />
 			<div className="footer">
 				<a href="" target="_blank" rel="noreferrer">

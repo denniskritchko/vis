@@ -73,3 +73,35 @@ body {
 	opacity: 0.5;
 }
 
+.top-right-actions {
+	position: fixed;
+	right: calc(env(safe-area-inset-right, 0px) + 1.0rem);
+	top: calc(env(safe-area-inset-top, 0px) + 1.0rem);
+	z-index: 11;
+	display: flex;
+	gap: 1.1rem;
+}
+
+.action-btn {
+	appearance: none;
+	padding: 2.0rem 2.0rem;
+	border-radius: 15px;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	font-size: 1.05rem;
+	letter-spacing: 0.01em;
+	backdrop-filter: blur(6px);
+	cursor: pointer;
+	transition: box-shadow 0.2s ease, transform 0.08s ease;
+	box-shadow: 0 0 16px rgba(255, 255, 255, 0.22), 0 0 56px rgba(255, 255, 255, 0.12);
+}
+
+.action-btn:hover {
+	box-shadow: 0 0 16px rgba(255, 255, 255, 0.35), 0 0 54px rgba(255, 255, 255, 0.22);
+}
+
+.action-btn:active {
+	transform: translateY(1px);
+}
+
