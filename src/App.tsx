@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
@@ -23,9 +23,10 @@ export function App(): React.ReactElement {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const inputContainerRef = useRef<HTMLDivElement | null>(null)
 	const cursorRef = useRef<HTMLDivElement | null>(null)
+	const [page, setPage] = useState<'home' | 'learn'>('home')
 
 	useEffect(() => {
-		if (!canvasRef.current) return
+		if (page !== 'home' || !canvasRef.current) return
 
 		const renderer = new THREE.WebGLRenderer({
 			canvas: canvasRef.current,
@@ -344,23 +345,43 @@ export function App(): React.ReactElement {
 			objectMaterial.dispose()
 			capsules.forEach((m) => m.geometry.dispose())
 		}
-	}, [])
+	}, [page])
 
 	return (
 		<>
-			<canvas ref={canvasRef} className="three-canvas" />
-			<div ref={inputContainerRef} className="overlay-input">
-				<input className="text-input" placeholder={"Let's get creative"} />
-			</div>
+			{page === 'home' && (
+				<>
+					<canvas ref={canvasRef} className="three-canvas" />
+					<div ref={inputContainerRef} className="overlay-input">
+						<input className="text-input" placeholder={"Let's get creative"} />
+					</div>
+					<div ref={cursorRef} className="cursor-highlight" />
+					<div className="footer">
+						<a href="" target="_blank" rel="noreferrer">
+						</a>
+					</div>
+				</>
+			)}
+			{page === 'learn' && (
+				<>
+					<div className="top-left-logo">
+						<button className="logo-btn" onClick={() => setPage('home')}>Vis</button>
+					</div>
+					<div className="learn-page">
+						<div className="learn-input">
+							<input
+								className="text-input"
+								readOnly
+								value={"We are defying the status quo for audio visualization in the music industry."}
+							/>
+						</div>
+					</div>
+				</>
+			)}
 			<div className="top-right-actions">
-				<button className="action-btn">Learn more</button>
+				<button className="action-btn" onClick={() => setPage('learn')}>Learn more</button>
 				<button className="action-btn">Contact</button>
 				<button className="action-btn">Sign in</button>
-			</div>
-			<div ref={cursorRef} className="cursor-highlight" />
-			<div className="footer">
-				<a href="" target="_blank" rel="noreferrer">
-				</a>
 			</div>
 		</>
 	)

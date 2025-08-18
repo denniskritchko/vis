@@ -1,3 +1,39 @@
+.learn-page {
+	position: fixed;
+	inset: 0;
+	background: #000a0b;
+	display: grid;
+	place-items: center;
+}
+
+.learn-input {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 2rem;
+}
+
+.top-left-logo {
+	position: fixed;
+	left: calc(env(safe-area-inset-left, 0px) + 1rem);
+	top: calc(env(safe-area-inset-top, 0px) + 1rem);
+	z-index: 12;
+}
+
+.logo-btn {
+	appearance: none;
+	padding: 0.6rem 1rem;
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	backdrop-filter: blur(6px);
+	cursor: pointer;
+	box-shadow: 0 0 16px rgba(255, 255, 255, 0.18), 0 0 48px rgba(255, 255, 255, 0.1);
+}
 body {
 	margin: 0;
 }
